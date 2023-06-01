@@ -1,29 +1,29 @@
-# React Transcribe
+# Amazon Transcribe with React
 
-このリポジトリは、React で Amazon Transcribe を使った音声入力を行うサンプルコードです。  
+This repository is sample code for streaming transcription using Amazon Transcribe in React.  
 
 ## Overview
 
-Amazon Transcribe でストリーミング文字起こしは、[@aws-sdk/client-transcribe-streaming](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-transcribe-streaming/) を利用して実装します。  
-こちらで紹介されているサンプルコードをベースに、実装を行なっていきます。  
+Streaming transcription with Amazon Transcribe is implemented using [@aws-sdk/client-transcribe-streaming](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-transcribe-streaming/).  
+The implementation will be based on this sample code.  
 
-ブラウザから音声入力を行う場合は、 [microphone-stream](https://github.com/microphone-stream/microphone-stream#readme) を利用します。  
-**しかし、デフォルトの状態では、Polyfill のエラーが発生して実行することができません。**  
+Use [microphone-stream](https://github.com/microphone-stream/microphone-stream#readme) for audio input from a browser.  
+**But if Polyfill is not configured, it can't run it with an error.**
 
-当リポジトリは、Polyfill の設定にフォーカスしたサンプルコードです。  
-webpack と Vite で実装方法が異なるため、それぞれのサンプルコードを用意しています。  
-ただし、`src/hooks/useTranscribe.ts` は webpack と Vite どちらも同じコードです。  
+This repository is sample code focused on Polyfill configuration.  
+Since `webpack` and `Vite` have different implementations, we have included sample code for each.  
+However, `src/hooks/useTranscribe.ts` is the same code for both `webpack` and `Vite`.  
 
 ## Preparation
 
-Amazon Transcribe が実行可能な IAM ユーザを作成してください（コンソールアクセスは不要）  
-アクセスキーを作成して、アクセスキーとシークレットアクセスキーをメモしておいてください（.envに設定します）
+Create an IAM user that can run Amazon Transcribe (No console access required).  
+Create an access key, Please note that the access key and secret access key will be set later in `.env`.  
 
 ## webpack
 
-[Create React App](https://create-react-app.dev/) を利用して構築しています。  
+It is built using [Create React App](https://create-react-app.dev/).  
 
-`webpack/.env` で以下のように環境変数を設定してください。  
+Set environment variables in `webpack/.env` as follows.  
 
 ```bash
 REACT_APP_REGION=any-region-name
@@ -31,20 +31,28 @@ REACT_APP_ACCESS_KEY_ID=iam-user-access-key
 REACT_APP_SECRET_ACCESS_KEY=iam-user-secret-access-key
 ```
 
-[@aws-sdk/client-transcribe-streaming](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-transcribe-streaming/) のサンプルコードをそのまま実行すると、以下のようなエラーが発生して実行できません。  
+Start with the following command.
+
+```bash
+cd webpack
+npm run start
+```
+
+This sample code configured Polyfill, so no error occurs.
+However, if Polyfill is not configured, the following error occurs and execution fails.
 
 ```bash
 BREAKING CHANGE: webpack < 5 used to include polyfills for node.js core modules by default.
 This is no longer the case. Verify if you need this module and configure a polyfill for it.
 ```
 
-Polyfill の設定できていませんので、必要なパッケージをインストールします。
+Install the required packages in Polyfill.
 
 ```bash
 npm install buffer process
 ```
 
-ビルドエラーは解消しますが、Transcribe を実行すると以下のエラーが発生します。
+The build error is resolved, but the following error occurs when Transcribe is run.  
 
 ```bash
 index.js:35 Uncaught ReferenceError: Buffer is not defined
@@ -53,7 +61,7 @@ index.js:35 Uncaught ReferenceError: Buffer is not defined
     at ScriptProcessorNode.recorderProcess (microphone-stream.js:108:1)
 ```
 
-`index.tsx` に、polyfill のコードを追加することでエラーが解消されます。  
+Adding the polyfill code to `index.tsx` resolves the error.  
 
 ```tsx
 import { Buffer } from "buffer";
@@ -65,9 +73,9 @@ window.Buffer = Buffer;
 
 ## Vite
 
-[create vite](https://vitejs.dev/guide/#scaffolding-your-first-vite-project) を利用して構築しています。  
+It is built using [create vite](https://vitejs.dev/guide/#scaffolding-your-first-vite-project).  
 
-`vite/.env` で以下のように環境変数を設定してください。  
+Set environment variables in `vite/.env` as follows.  
 
 ```bash
 VITE_REGION=any-region-name
@@ -75,16 +83,26 @@ VITE_ACCESS_KEY_ID=iam-user-access-key
 VITE_SECRET_ACCESS_KEY=iam-user-secret-access-key
 ```
 
-webpack と同じように、polyfill の設定を行います。  
-vite では `process` は利用しないので、設定しません。  
+Start with the following command.
 
-npm package のインストール
+```bash
+cd vite
+npm run dev
+```
+
+This sample code configured Polyfill, so no error occurs.
+However, if Polyfill is not configured, Error as with webpack's sample code.
+
+Set up Polyfill as in webpack's sample code.  
+In `vite`, `process` is not used.
+
+Install the required packages in Polyfill.
 
 ```bash
 npm install buffer
 ```
 
-`main.tsx` に polyfill のコードを追加
+Adding the polyfill code to `main.tsx`
 
 ```tsx
 
@@ -94,7 +112,7 @@ import { Buffer } from "buffer";
 (window as any).Buffer = Buffer;
 ```
 
-Vite では上記の設定だけでは不十分で、以下のエラーが発生します。  
+In Vite, even with the above settings, the following error occurs.  
 
 ```bash
 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'call')
@@ -110,14 +128,14 @@ Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'c
     at processDispatchQueue (react-dom.development.js:9086:5)
 ```
 
-そこで、[vite-plugin-node-polyfills](https://github.com/davidmyersdev/vite-plugin-node-polyfills) を導入します。  
-これは、Node.js の Core Modules を polyfill するための Vite プラグインです。
+You can solve this by adding a Vite plugin to polyfill Core Modules in Node.js.  
+Install [vite-plugin-node-polyfills](https://github.com/davidmyersdev/vite-plugin-node-polyfills).
 
 ```bash
 npm install -D vite-plugin-node-polyfills
 ```
 
-インストールしたら、`vite/vite.config.ts` を以下の通り修正します。
+Set `vite/vite.config.ts` as follows.  
 
 ```typescript
 import { defineConfig } from "vite";
@@ -136,4 +154,4 @@ export default defineConfig({
 });
 ```
 
-これでエラーが解消されます。
+This will resolve the error.
